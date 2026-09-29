@@ -1,0 +1,24 @@
+<?php
+
+namespace {{ namespace }};
+
+use Arifnd\LiteQueue\Bus\Dispatchable;
+use Arifnd\LiteQueue\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+
+class {{ class }} implements ShouldQueue
+{
+    use Dispatchable;
+    use Queueable;
+
+    public int $tries = 1;
+
+    public function __construct()
+    {
+    }
+
+    public function handle(): void
+    {
+        //
+    }
+}

@@ -1,0 +1,16 @@
+<?php
+
+namespace {{ namespace }};
+
+use {{ class }};
+use PHPUnit\Framework\TestCase;
+
+class {{ class }}Test extends TestCase
+{
+    public function test_it_runs(): void
+    {
+        (new {{ class }})->handle();
+
+        $this->assertTrue(true);
+    }
+}
