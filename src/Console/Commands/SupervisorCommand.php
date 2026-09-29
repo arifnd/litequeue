@@ -100,7 +100,7 @@ class SupervisorCommand extends Command
         }
 
         $connection = $this->laravel->make(RedisFactory::class)
-            ->connection($config['horizon']['redis_connection'] ?? 'default');
+            ->connection($config['horizon']['redis_connection'] ?? 'horizon');
 
         return new RedisSupervisorStore($connection);
     }

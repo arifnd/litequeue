@@ -25,6 +25,28 @@ Publish the configuration (optional):
 lq install
 ```
 
+## Environment variables
+
+For a simple single-Redis setup almost everything has a default — only the queue backend and (if
+Redis is not on localhost) the host are needed:
+
+```dotenv
+QUEUE_CONNECTION=litequeue
+APP_NAME=Laravel
+# REDIS_HOST=127.0.0.1   # defaults to 127.0.0.1
+```
+
+`REDIS_PORT` (6379), `REDIS_PASSWORD` (none), `REDIS_DB` (0) and the queue name
+(`REDIS_QUEUE` / `LITEQUEUE_QUEUE`, default `default`) all fall back automatically.
+
+`APP_NAME` matters only for Horizon visibility: Horizon derives its Redis prefix from the app name
+as `{app_name}_horizon:` (e.g. `laravel_horizon:`), and LiteQueue matches it.
+
+Inside a Laravel app, `.env` is loaded automatically. The standalone `lq` binary does **not** load
+a `.env` file — export these as real process environment variables (shell, Supervisor, Docker). See
+[Configuration](docs/configuration.md#connecting-to-redis) for the full list, including
+`REDIS_PREFIX`.
+
 ## Quick start (standalone, no Laravel app)
 
 ```bash

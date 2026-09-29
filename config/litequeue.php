@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Str;
+
 return [
 
     'default' => env('QUEUE_CONNECTION', 'sync'),
@@ -66,8 +68,8 @@ return [
         'autoScalingStrategy' => 'time',
 
         'horizon' => [
-            'redis_connection' => env('LITEQUEUE_HORIZON_REDIS_CONNECTION', 'default'),
-            'prefix' => env('HORIZON_PREFIX', 'laravel_horizon:'),
+            'redis_connection' => env('LITEQUEUE_HORIZON_REDIS_CONNECTION', 'horizon'),
+            'prefix' => env('HORIZON_PREFIX') ?: Str::slug(env('APP_NAME', 'laravel'), '_').'_horizon:',
             'ttl' => 30,
             'master_ttl' => 15,
             'heartbeat_interval' => 1,

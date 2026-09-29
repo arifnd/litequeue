@@ -139,6 +139,8 @@ class LiteQueueConsole
                     ];
                 }
 
+                $redis = static::registerHorizonConnection($redis, $config);
+
                 return new RedisManager($c, $redis['client'] ?? 'phpredis', $redis);
             });
         }
@@ -168,6 +170,41 @@ class LiteQueueConsole
         }
 
         return [];
+    }
+
+    /**
+     * Ensure a Redis connection carrying the Horizon prefix exists for the
+     * supervisor state, without disturbing the queue connection prefix.
+     *
+     * @param  array<string, mixed>  $redis
+     * @param  array<string, mixed>  $config
+     * @return array<string, mixed>
+     */
+    protected static function registerHorizonConnection(array $redis, array $config): array
+    {
+        $name = (string) ($config['supervisor']['horizon']['redis_connection'] ?? 'horizon');
+
+        if (isset($redis[$name])) {
+            return $redis;
+        }
+
+        $base = $redis['default'] ?? [];
+
+        $redis[$name] = array_merge($base, [
+            'options' => array_merge($base['options'] ?? [], [
+                'prefix' => static::horizonPrefix($config),
+            ]),
+        ]);
+
+        return $redis;
+    }
+
+    /**
+     * @param  array<string, mixed>  $config
+     */
+    protected static function horizonPrefix(array $config): string
+    {
+        return (string) ($config['supervisor']['horizon']['prefix'] ?? 'laravel_horizon:');
     }
 
     /**

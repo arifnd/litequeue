@@ -14,9 +14,19 @@ lq supervisor --dry-run          # in-memory state, no Redis
 
 ## Requirements
 
-- The same Redis host **and prefix** as Horizon.
-- The Horizon prefix configured under `litequeue.supervisor.horizon.prefix`
-  (defaults to `HORIZON_PREFIX` / `laravel_horizon:`).
+- The same Redis host and database as Horizon.
+- The same Horizon **prefix** as Horizon. LiteQueue derives it the same way Horizon does:
+
+  ```
+  env('HORIZON_PREFIX') ?: Str::slug(env('APP_NAME', 'laravel'), '_').'_horizon:'
+  ```
+
+  So for `APP_NAME=Laravel` the prefix is `laravel_horizon:`. Override it with `HORIZON_PREFIX`
+  or `litequeue.supervisor.horizon.prefix`.
+
+Supervisor state is written through a dedicated `horizon` Redis connection that carries the Horizon
+prefix, so it stays independent of the queue connection prefix (`REDIS_PREFIX`). You can point it
+elsewhere with `litequeue.supervisor.horizon.redis_connection`.
 
 ## What is written
 

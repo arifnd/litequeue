@@ -116,6 +116,40 @@ final class ConsoleTest extends TestCase
         $this->assertStringContainsString('namespace App\Traits;', $this->files->get($this->basePath.'/app/Traits/Loggable.php'));
     }
 
+    public function test_bootstrap_registers_a_horizon_connection_with_the_configured_prefix(): void
+    {
+        $method = new \ReflectionMethod(LiteQueueConsole::class, 'registerHorizonConnection');
+
+        $redis = [
+            'default' => ['host' => '127.0.0.1', 'port' => 6379],
+            'options' => ['prefix' => 'laravel_database_'],
+        ];
+        $config = ['supervisor' => ['horizon' => [
+            'redis_connection' => 'horizon',
+            'prefix' => 'myapp_horizon:',
+        ]]];
+
+        $result = $method->invoke(null, $redis, $config);
+
+        $this->assertSame('myapp_horizon:', $result['horizon']['options']['prefix']);
+        $this->assertSame('127.0.0.1', $result['horizon']['host']);
+        $this->assertSame('laravel_database_', $result['options']['prefix']);
+    }
+
+    public function test_bootstrap_keeps_an_existing_horizon_connection(): void
+    {
+        $method = new \ReflectionMethod(LiteQueueConsole::class, 'registerHorizonConnection');
+
+        $redis = [
+            'default' => ['host' => '127.0.0.1'],
+            'horizon' => ['host' => '10.0.0.9', 'options' => ['prefix' => 'custom:']],
+        ];
+
+        $result = $method->invoke(null, $redis, []);
+
+        $this->assertSame('10.0.0.9', $result['horizon']['host']);
+    }
+
     /**
      * @param  class-string<Command>  $command
      * @param  array<string, mixed>  $parameters
