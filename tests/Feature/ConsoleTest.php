@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace Arifnd\LiteQueue\Tests\Feature;
 
 use Arifnd\LiteQueue\Console\Commands\MakeJobCommand;
+use Arifnd\LiteQueue\Console\Commands\MakeServiceCommand;
+use Arifnd\LiteQueue\Console\Commands\MakeTraitCommand;
 use Arifnd\LiteQueue\Console\LiteQueueConsole;
 use Arifnd\LiteQueue\Queue\QueueManager;
 use Arifnd\LiteQueue\Queue\SyncQueue;
 use Arifnd\LiteQueue\Tests\TestCase;
+use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
 use Symfony\Component\Console\Application as SymfonyApplication;
 use Symfony\Component\Console\Tester\CommandTester;
@@ -77,5 +80,55 @@ final class ConsoleTest extends TestCase
 
         $this->assertFileExists($path);
         $this->assertStringNotContainsString('ShouldQueue', $this->files->get($path));
+    }
+
+    public function test_make_service_creates_a_service_class(): void
+    {
+        $this->runCommand(MakeServiceCommand::class, ['name' => 'Billing/InvoiceService']);
+
+        $path = $this->basePath.'/app/Services/Billing/InvoiceService.php';
+
+        $this->assertFileExists($path);
+        $this->assertStringContainsString('namespace App\Services\Billing;', $this->files->get($path));
+        $this->assertStringContainsString('class InvoiceService', $this->files->get($path));
+    }
+
+    public function test_make_trait_prefers_the_concerns_directory(): void
+    {
+        $this->files->ensureDirectoryExists($this->basePath.'/app/Concerns');
+
+        $this->runCommand(MakeTraitCommand::class, ['name' => 'RecordsActivity']);
+
+        $path = $this->basePath.'/app/Concerns/RecordsActivity.php';
+
+        $this->assertFileExists($path);
+        $this->assertStringContainsString('namespace App\Concerns;', $this->files->get($path));
+        $this->assertStringContainsString('trait RecordsActivity', $this->files->get($path));
+    }
+
+    public function test_make_trait_uses_traits_directory_when_present(): void
+    {
+        $this->files->ensureDirectoryExists($this->basePath.'/app/Traits');
+
+        $this->runCommand(MakeTraitCommand::class, ['name' => 'Loggable']);
+
+        $this->assertFileExists($this->basePath.'/app/Traits/Loggable.php');
+        $this->assertStringContainsString('namespace App\Traits;', $this->files->get($this->basePath.'/app/Traits/Loggable.php'));
+    }
+
+    /**
+     * @param  class-string<Command>  $command
+     * @param  array<string, mixed>  $parameters
+     */
+    private function runCommand(string $command, array $parameters): void
+    {
+        $container = LiteQueueConsole::bootstrap($this->basePath);
+        $instance = new $command;
+        $instance->setLaravel($container);
+
+        $application = new SymfonyApplication;
+        $application->addCommand($instance);
+
+        (new CommandTester($instance))->execute($parameters);
     }
 }

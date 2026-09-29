@@ -5,6 +5,8 @@ All commands run through the standalone `lq` binary (no `php artisan`).
 | Command | Description |
 | --- | --- |
 | `lq make:job {name}` | Create a job class (`--sync`, `--once`, `--test`, `--pest`, `--force`, `--path`) |
+| `lq make:service {name}` | Create a service class (`--force`, `--path`) |
+| `lq make:trait {name}` | Create a trait (`--force`, `--path`) |
 | `lq work {connection?}` | Process jobs (`--once`, `--queue`, `--tries`, `--timeout`, `--max-jobs`, …) |
 | `lq supervisor {connection?}` | Run as a Horizon-compatible supervisor (`--dry-run`, `--max-jobs`, …) |
 | `lq install` | Publish `config/litequeue.php` (`--force`) |
@@ -17,6 +19,8 @@ All commands run through the standalone `lq` binary (no `php artisan`).
 
 ```bash
 lq make:job ProcessPodcast --once --test
+lq make:service Billing/InvoiceService
+lq make:trait RecordsActivity
 lq work redis --queue=high,default --tries=3
 lq supervisor redis --queue=default
 lq failed

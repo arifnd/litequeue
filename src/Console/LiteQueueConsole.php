@@ -58,6 +58,8 @@ class LiteQueueConsole
     {
         return [
             Commands\MakeJobCommand::class,
+            Commands\MakeServiceCommand::class,
+            Commands\MakeTraitCommand::class,
             Commands\WorkCommand::class,
             Commands\SupervisorCommand::class,
             Commands\FailedCommand::class,
