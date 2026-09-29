@@ -13,13 +13,15 @@ LiteQueue requires individual `illuminate/*` components, not the full `laravel/f
 The `lq` binary works without a Laravel application:
 
 ```bash
-vendor/bin/lq list
+vendor/bin/lq install      # publishes config/litequeue.php and config/database.php
 vendor/bin/lq make:job SendEmail
 vendor/bin/lq work redis
 ```
 
-LiteQueue reads `config/litequeue.php` from the current working directory if present; otherwise it
-falls back to the package defaults.
+LiteQueue reads `config/litequeue.php` and `config/database.php` from the current working directory
+if present; otherwise it falls back to the package defaults. Booting `config/database.php` also
+enables Eloquent, so jobs can use models for database CRUD (see
+[Configuration](configuration.md#database--eloquent)).
 
 ## In a Laravel app
 

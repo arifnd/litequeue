@@ -166,6 +166,48 @@ The service provider resolves Laravel's Redis factory
 ],
 ```
 
+## Database & Eloquent
+
+The standalone `lq` runner boots a database manager and Eloquent, so jobs can use models for CRUD
+without a full Laravel application. Configuration lives in `config/database.php`:
+
+```bash
+lq install   # publishes config/litequeue.php and config/database.php
+```
+
+`lq install` also creates the SQLite file when the default connection is `sqlite`, so a fresh
+project works out of the box. The shipped defaults use `env()` and cover `sqlite`, `mysql`, `pgsql`
+and `sqlsrv`:
+
+```dotenv
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=app
+DB_USERNAME=root
+DB_PASSWORD=
+```
+
+The database manager is bound as `db` and the `DB` facade is available, so the query builder and
+Eloquent both work — including per-model connections:
+
+```php
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
+
+DB::table('orders')->where('paid', true)->count();
+
+final class Order extends Model
+{
+    protected $connection = 'mysql';
+    protected $guarded = [];
+}
+```
+
+LiteQueue does not manage your schema — create tables with your own migrations or tooling. Inside a
+Laravel app this file is ignored: LiteQueue uses the application's `config/database.php` and DB
+connection directly.
+
 ## Redis keys
 
 Given queue name `Q` and connection prefix `P`:

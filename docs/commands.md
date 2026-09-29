@@ -9,7 +9,7 @@ All commands run through the standalone `lq` binary (no `php artisan`).
 | `lq make:trait {name}` | Create a trait (`--force`, `--path`) |
 | `lq work {connection?}` | Process jobs (`--once`, `--queue`, `--tries`, `--timeout`, `--max-jobs`, …) |
 | `lq supervisor {connection?}` | Run as a Horizon-compatible supervisor (`--dry-run`, `--max-jobs`, …) |
-| `lq install` | Publish `config/litequeue.php` (`--force`) |
+| `lq install` | Publish `config/litequeue.php` and `config/database.php` (`--force`, `--no-database`) |
 | `lq failed` | List failed jobs |
 | `lq retry {id\|all}` | Retry a failed job |
 | `lq forget {id}` | Remove a failed job |

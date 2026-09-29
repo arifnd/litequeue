@@ -50,6 +50,9 @@ a `.env` file — export these as real process environment variables (shell, Sup
 ## Quick start (standalone, no Laravel app)
 
 ```bash
+# Publish config/litequeue.php and config/database.php
+lq install
+
 # Generate a job
 lq make:job SendEmail
 
@@ -59,6 +62,10 @@ lq work redis
 # Or run as a Horizon-visible supervisor
 lq supervisor redis
 ```
+
+Standalone boots the database manager, Eloquent and facades (via `config/database.php`), so jobs can
+use `DB::table(...)` and models for database CRUD. See
+[Configuration](docs/configuration.md#database--eloquent).
 
 Dispatch from PHP:
 
