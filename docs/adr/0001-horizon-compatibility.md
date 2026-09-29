@@ -18,7 +18,7 @@ compatibility surface here before implementing.
 
 1. **Interfaces, not forks.** LiteQueue depends on `illuminate/*` components (contracts,
    support, console, container, events, pipeline, redis, database, filesystem, queue) but owns
-   its queue implementation. Supported Laravel: `^11 || ^12 || ^13`.
+   its queue implementation. Supported Laravel: `^12 || ^13`.
 2. **Standalone runner.** The `lq` binary boots a thin container (no Laravel kernel, no
    `php artisan`) and exposes commands such as `make:job` and `work`.
 3. **Horizon is optional.** LiteQueue never requires Horizon. When Horizon is present, LiteQueue
@@ -34,7 +34,7 @@ compatibility surface here before implementing.
    status**; recording per-job history into Horizon's job repository is a follow-up.
 7. **Freeze the event surface** to Laravel's `Illuminate\Queue\Events\*` names and constructor
    shapes so Horizon listeners and third-party code accept them.
-8. **Freeze the job payload shape** to `Queue::createPayloadArray()` output for Laravel 11/12/13.
+8. **Freeze the job payload shape** to `Queue::createPayloadArray()` output for Laravel 12/13.
 
 ## Frozen Redis queue schema (Laravel `RedisQueue`)
 

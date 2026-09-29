@@ -10,7 +10,7 @@ dashboard as a supervisor by emulating Horizon's Redis supervisor state.
 ## Requirements
 
 - PHP `^8.2`
-- Laravel components `^11 || ^12 || ^13` (`illuminate/*`) — a full Laravel app is **not** required
+- Laravel components `^12 || ^13` (`illuminate/*`) — a full Laravel app is **not** required
 - Redis is required only for the `litequeue_redis` driver
 
 ## Installation
@@ -80,7 +80,7 @@ SendEmail::dispatch($user)->onConnection('litequeue');
 
 | LiteQueue | PHP | Laravel | Horizon |
 | --- | --- | --- | --- |
-| 0.1.x | 8.2–8.5 | 11–13 | optional (n/a, 5.x, 6.x) |
+| 0.1.x | 8.2–8.5 | 12–13 | optional (n/a, 5.x, 6.x) |
 
 The Redis queue schema, job payload, and `Illuminate\Queue\Events\*` event surface are frozen to
 match Laravel, so Horizon metrics, `failed_jobs`, and external tooling interoperate.

@@ -131,12 +131,12 @@ Maintain and bump deliberately; each row is a MINOR/MAJOR decision:
 
 | LiteQueue | PHP | Laravel | Horizon | Drivers |
 | --- | --- | --- | --- | --- |
-| 0.1.x | 8.2–8.5 | 11–13 | optional (n/a, 5.x, 6.x) | redis, sync, null |
-| 1.0.x | 8.2–8.5 | 11–13 | optional (n/a, 5.x, 6.x) | redis, sync, null |
+| 0.1.x | 8.2–8.5 | 12–13 | optional (n/a, 5.x, 6.x) | redis, sync, null |
+| 1.0.x | 8.2–8.5 | 12–13 | optional (n/a, 5.x, 6.x) | redis, sync, null |
 
 Horizon is optional: LiteQueue runs standalone (`lq work`) or as a supervisor that appears in a
 Horizon dashboard (same or another project). Horizon's exact supported majors are verified in
-`task-16`; Laravel 13 support is "allowed if present" (`^11 || ^12 || ^13`).
+`task-16`; Laravel 13 support is "allowed if present" (`^12 || ^13`).
 
 ## Deprecation policy
 

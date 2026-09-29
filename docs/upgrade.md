@@ -11,7 +11,7 @@ Initial development release.
 - Drivers: `litequeue_redis`, `sync`, `null`.
 - Worker with retries, backoff, events, and failed jobs.
 - Horizon-compatible supervisor state emulation.
-- Supported: PHP 8.2–8.4, Laravel 11–13.
+- Supported: PHP 8.2–8.5, Laravel 12–13.
 
 ### Breaking changes
 

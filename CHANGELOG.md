@@ -19,6 +19,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unique-job locking.
 - Horizon-compatible supervisor state emulation on shared Redis.
 - Testing fakes: `QueueFake`, `JobFake`.
-- Supported: PHP 8.2–8.4, Laravel 11–13.
+- Supported: PHP 8.2–8.5, Laravel 12–13.
 
 [Unreleased]: https://github.com/arifnd/litequeue/commits/main
