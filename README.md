@@ -97,6 +97,7 @@ Horizon-compatible supervisor state to the shared Redis. See [docs/supervisor.md
 - [Jobs](docs/jobs.md)
 - [Worker](docs/worker.md)
 - [Supervisor & Horizon](docs/supervisor.md)
+- [Deployment (Supervisor & Docker)](docs/deployment.md)
 - [Commands](docs/commands.md)
 - [Testing](docs/testing.md)
 - [Upgrade guide](docs/upgrade.md)

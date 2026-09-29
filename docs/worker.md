@@ -30,5 +30,7 @@ the current job; `SIGUSR2` pauses it.
 
 ## Restart
 
-Set the `illuminate:queue:restart` cache flag (e.g. `lq restart`) to make long-running workers
-exit between jobs.
+Workers are supervised processes: restart them through your process manager (Supervisor
+`restart`, Docker `stop`/`up`, or a Kubernetes rollout). Because `SIGTERM` stops the worker
+gracefully after the current job, deploys won't drop in-flight work as long as the shutdown
+grace period exceeds the job timeout. See [deployment.md](deployment.md).
