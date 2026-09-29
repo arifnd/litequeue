@@ -46,6 +46,12 @@ return [
         'table' => 'failed_jobs',
     ],
 
+    'security' => [
+        'sign_payloads' => env('LITEQUEUE_SIGN_PAYLOADS', false),
+        'signing_key' => env('LITEQUEUE_SIGNING_KEY', env('APP_KEY')),
+        'allowed_classes' => null,
+    ],
+
     'supervisor' => [
         'enabled' => env('LITEQUEUE_SUPERVISOR', true),
         'name' => env('LITEQUEUE_SUPERVISOR_NAME', 'litequeue'),

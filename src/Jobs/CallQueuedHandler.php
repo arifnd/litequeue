@@ -6,6 +6,7 @@ namespace Arifnd\LiteQueue\Jobs;
 
 use Arifnd\LiteQueue\Bus\UniqueLock;
 use Arifnd\LiteQueue\Jobs\Attributes\DeleteWhenMissingModels;
+use Arifnd\LiteQueue\Queue\PayloadFactory;
 use Exception;
 use Illuminate\Contracts\Bus\Dispatcher;
 use Illuminate\Contracts\Cache\Repository as Cache;
@@ -56,12 +57,20 @@ class CallQueuedHandler
      */
     protected function getCommand(array $data): mixed
     {
+        $factory = $this->container->make(PayloadFactory::class);
+        $factory->verifyCommand($data);
+
+        $allowed = $factory->allowedClasses() ?? true;
+
         if (str_starts_with((string) $data['command'], 'O:')) {
-            return unserialize($data['command']);
+            return unserialize($data['command'], ['allowed_classes' => $allowed]);
         }
 
         if ($this->container->bound(Encrypter::class)) {
-            return unserialize($this->container->make(Encrypter::class)->decrypt($data['command']));
+            return unserialize(
+                $this->container->make(Encrypter::class)->decrypt($data['command']),
+                ['allowed_classes' => $allowed]
+            );
         }
 
         throw new RuntimeException('Unable to extract job payload.');

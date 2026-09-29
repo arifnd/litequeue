@@ -27,6 +27,12 @@ return [
         'table' => 'failed_jobs',
     ],
 
+    'security' => [
+        'sign_payloads' => env('LITEQUEUE_SIGN_PAYLOADS', false),
+        'signing_key' => env('LITEQUEUE_SIGNING_KEY', env('APP_KEY')),
+        'allowed_classes' => null,
+    ],
+
     'supervisor' => [
         'enabled' => env('LITEQUEUE_SUPERVISOR', true),
         'name' => env('LITEQUEUE_SUPERVISOR_NAME', 'litequeue'),
@@ -165,6 +171,26 @@ The service provider resolves Laravel's Redis factory
     ],
 ],
 ```
+
+## Payload signing
+
+Queue payloads are serialized PHP objects, so a writer to Redis can otherwise inject a job class of
+their choosing. Payload signing adds integrity verification:
+
+```php
+'security' => [
+    'sign_payloads' => true,
+    'signing_key' => env('LITEQUEUE_SIGNING_KEY', env('APP_KEY')),
+    // Optional: restrict which classes are unserialized (default: no restriction).
+    'allowed_classes' => null,
+],
+```
+
+When enabled, `PayloadFactory` signs the serialized command with HMAC-SHA256 and
+`CallQueuedHandler` verifies it (with `hash_equals`) before unserializing; tampered payloads throw
+`InvalidPayloadException` and are failed safely. Signing is **off by default** so payloads stay
+byte-compatible with Laravel/Horizon. If you turn it on, every producer and consumer of the queue
+must sign with the same key.
 
 ## Database & Eloquent
 

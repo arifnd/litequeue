@@ -23,10 +23,31 @@ class PayloadFactory implements PayloadFactoryContract
      */
     protected static $createPayloadCallback = null;
 
+    protected bool $signPayloads = false;
+
+    protected ?string $signingKey = null;
+
+    /**
+     * @var array<int, class-string>|null
+     */
+    protected ?array $allowedClasses = null;
+
     public function __construct(
         protected Container $container,
         protected string $handler = CallQueuedHandler::class.'@call',
-    ) {}
+    ) {
+        $security = $this->securityConfig();
+
+        $this->signPayloads = (bool) ($security['sign_payloads'] ?? false);
+        $this->signingKey = isset($security['signing_key']) ? (string) $security['signing_key'] : null;
+
+        $allowed = $security['allowed_classes'] ?? null;
+        $this->allowedClasses = is_array($allowed) ? array_values($allowed) : null;
+
+        if ($this->signPayloads && ($this->signingKey === null || $this->signingKey === '')) {
+            throw new InvalidPayloadException('Payload signing is enabled but no signing key is configured.');
+        }
+    }
 
     public function make(
         object|string $job,
@@ -72,6 +93,16 @@ class PayloadFactory implements PayloadFactoryContract
      */
     protected function objectPayload(object $job, string $queue): array
     {
+        $data = [
+            'commandName' => get_class($job),
+            'command' => $this->serializeJob($job),
+            'batchId' => $this->attribute($job, 'batchId'),
+        ];
+
+        if ($this->signPayloads) {
+            $data['signature'] = $this->sign((string) $data['command']);
+        }
+
         return $this->withHooks($queue, [
             'uuid' => JobId::generate(),
             'displayName' => $this->displayName($job),
@@ -82,11 +113,7 @@ class PayloadFactory implements PayloadFactoryContract
             'backoff' => $this->jobBackoff($job),
             'timeout' => $this->attribute($job, 'timeout'),
             'retryUntil' => $this->jobExpiration($job),
-            'data' => [
-                'commandName' => get_class($job),
-                'command' => $this->serializeJob($job),
-                'batchId' => $this->attribute($job, 'batchId'),
-            ],
+            'data' => $data,
             'createdAt' => time(),
         ]);
     }
@@ -211,5 +238,57 @@ class PayloadFactory implements PayloadFactoryContract
     public static function createPayloadUsing(?callable $callback): void
     {
         static::$createPayloadCallback = $callback === null ? null : Closure::fromCallable($callback);
+    }
+
+    public function signsPayloads(): bool
+    {
+        return $this->signPayloads;
+    }
+
+    /**
+     * @return array<int, class-string>|null
+     */
+    public function allowedClasses(): ?array
+    {
+        return $this->allowedClasses;
+    }
+
+    public function sign(string $value): string
+    {
+        return hash_hmac('sha256', $value, (string) $this->signingKey);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     *
+     * @throws InvalidPayloadException
+     */
+    public function verifyCommand(array $data): void
+    {
+        if (! $this->signPayloads) {
+            return;
+        }
+
+        $command = $data['command'] ?? null;
+        $signature = $data['signature'] ?? null;
+
+        if (! is_string($command) || ! is_string($signature) || ! hash_equals($this->sign($command), $signature)) {
+            throw new InvalidPayloadException('The job payload signature is invalid.');
+        }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function securityConfig(): array
+    {
+        if (! $this->container->bound('config')) {
+            return [];
+        }
+
+        $config = $this->container->make('config');
+        $security = $config['litequeue.security'] ?? $config['security'] ?? null;
+
+        return is_array($security) ? $security : [];
     }
 }

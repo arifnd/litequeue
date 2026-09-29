@@ -40,8 +40,14 @@ Redis. Treat the following as trusted infrastructure:
 - Run the worker as an unprivileged user and keep the process manager's `stopwaitsecs`/grace period
   longer than the longest job timeout.
 
-Optional payload signing is planned (see `tasks/task-21.md` in development checkouts) for deployments
-that need integrity verification of queued payloads beyond network isolation.
+### Optional payload signing
+
+Deployments that need integrity verification beyond network isolation can enable payload signing
+via `litequeue.security.sign_payloads` (env `LITEQUEUE_SIGN_PAYLOADS`). When enabled, the serialized
+command is signed with an HMAC-SHA256 using `litequeue.security.signing_key` (defaults to
+`APP_KEY`) and the worker rejects payloads whose signature does not match. Signing is **off** by
+default to stay byte-compatible with Laravel/Horizon; every producer and consumer sharing a queue
+must use the same setting and key.
 
 ## Dependency auditing
 
