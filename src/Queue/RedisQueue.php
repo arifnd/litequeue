@@ -241,7 +241,7 @@ class RedisQueue extends Queue
 
     public function getQueue($queue): string
     {
-        return 'queues:'.($queue ?: $this->default);
+        return 'queues:'.(string) QueueName::parse(is_string($queue) ? $queue : null, $this->default);
     }
 
     public function getConnection(): PhpRedisConnection|PredisConnection
