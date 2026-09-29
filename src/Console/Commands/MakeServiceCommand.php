@@ -4,10 +4,7 @@ declare(strict_types=1);
 
 namespace Arifnd\LiteQueue\Console\Commands;
 
-use Illuminate\Console\Command;
-use Illuminate\Filesystem\Filesystem;
-
-class MakeServiceCommand extends Command
+class MakeServiceCommand extends ScaffoldCommand
 {
     protected $signature = 'make:service
         {name : The name of the service class}
@@ -16,37 +13,18 @@ class MakeServiceCommand extends Command
 
     protected $description = 'Create a new service class';
 
-    public function handle(): int
+    protected function type(): string
     {
-        $files = new Filesystem;
-
-        $relative = str_replace('\\', '/', trim((string) $this->argument('name'), '\\/'));
-        $segments = $relative === '' ? [] : explode('/', $relative);
-        $class = (string) array_pop($segments);
-        $subNamespace = implode('\\', $segments);
-
-        $namespace = 'App\\Services'.($subNamespace !== '' ? '\\'.$subNamespace : '');
-        $basePath = $this->option('path') ?: $this->laravel['litequeue.base_path'];
-        $directory = rtrim((string) $basePath, '/').'/app/Services'.($segments ? '/'.implode('/', $segments) : '');
-        $path = $directory.'/'.$class.'.php';
-
-        if ($files->exists($path) && ! $this->option('force')) {
-            $this->error("Service [{$path}] already exists.");
-
-            return self::FAILURE;
-        }
-
-        $files->ensureDirectoryExists($directory);
-        $files->put($path, $this->render('service.stub', $namespace, $class));
-        $this->info("Service [{$path}] created successfully.");
-
-        return self::SUCCESS;
+        return 'Service';
     }
 
-    protected function render(string $stub, string $namespace, string $class): string
+    protected function location(string $basePath): array
     {
-        $contents = (new Filesystem)->get(dirname(__DIR__, 3).'/stubs/'.$stub);
+        return ['App\\Services', $basePath.'/app/Services'];
+    }
 
-        return str_replace(['{{ namespace }}', '{{ class }}'], [$namespace, $class], $contents);
+    protected function stub(): string
+    {
+        return 'service.stub';
     }
 }

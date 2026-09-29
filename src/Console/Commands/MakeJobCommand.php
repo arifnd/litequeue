@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace Arifnd\LiteQueue\Console\Commands;
 
-use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
 
-class MakeJobCommand extends Command
+class MakeJobCommand extends ScaffoldCommand
 {
     protected $signature = 'make:job
         {name : The name of the job class}
@@ -21,54 +20,40 @@ class MakeJobCommand extends Command
 
     protected $description = 'Create a new job class';
 
-    public function handle(): int
+    protected function type(): string
     {
-        $files = new Filesystem;
+        return 'Job';
+    }
 
-        $relative = str_replace('\\', '/', trim((string) $this->argument('name'), '\\/'));
-        $segments = $relative === '' ? [] : explode('/', $relative);
-        $class = (string) array_pop($segments);
-        $subNamespace = implode('\\', $segments);
+    protected function location(string $basePath): array
+    {
+        return ['App\\Jobs', $basePath.'/app/Jobs'];
+    }
 
-        $namespace = 'App\\Jobs'.($subNamespace !== '' ? '\\'.$subNamespace : '');
-        $basePath = $this->option('path') ?: $this->laravel['litequeue.base_path'];
-        $directory = rtrim((string) $basePath, '/').'/app/Jobs'.($segments ? '/'.implode('/', $segments) : '');
-        $path = $directory.'/'.$class.'.php';
-
-        if ($files->exists($path) && ! $this->option('force')) {
-            $this->error("Job [{$path}] already exists.");
-
-            return self::FAILURE;
-        }
-
-        $stub = match (true) {
+    protected function stub(): string
+    {
+        return match (true) {
             (bool) $this->option('sync') => 'job.sync.stub',
             (bool) $this->option('once') => 'job.queued.oneshot.stub',
             default => 'job.queued.stub',
         };
+    }
 
-        $files->ensureDirectoryExists($directory);
-        $files->put($path, $this->render($stub, $namespace, $class));
-        $this->info("Job [{$path}] created successfully.");
+    protected function after(Filesystem $files, string $basePath, string $namespace, string $class): int
+    {
+        if (! $this->option('test') && ! $this->option('pest')) {
+            return self::SUCCESS;
+        }
 
-        if ($this->option('test') || $this->option('pest')) {
-            $testDirectory = rtrim((string) $basePath, '/').'/tests/Feature';
-            $testPath = $testDirectory.'/'.$class.'Test.php';
+        $directory = $basePath.'/tests/Feature';
+        $path = $directory.'/'.$class.'Test.php';
 
-            if (! $files->exists($testPath) || $this->option('force')) {
-                $files->ensureDirectoryExists($testDirectory);
-                $files->put($testPath, $this->render('job.test.stub', $namespace, $class));
-                $this->info("Test [{$testPath}] created successfully.");
-            }
+        if (! $files->exists($path) || $this->option('force')) {
+            $files->ensureDirectoryExists($directory);
+            $files->put($path, $this->render('job.test.stub', $namespace, $class));
+            $this->info("Test [{$path}] created successfully.");
         }
 
         return self::SUCCESS;
-    }
-
-    protected function render(string $stub, string $namespace, string $class): string
-    {
-        $contents = (new Filesystem)->get(dirname(__DIR__, 3).'/stubs/'.$stub);
-
-        return str_replace(['{{ namespace }}', '{{ class }}'], [$namespace, $class], $contents);
     }
 }
