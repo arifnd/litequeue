@@ -35,25 +35,45 @@ abstract class Queue implements QueueContract
      */
     abstract public function pushRaw($payload, $queue = null, array $options = []);
 
+    /**
+     * @param  string|null  $queue
+     * @return int
+     */
     abstract public function size($queue = null);
 
     abstract public function pop($queue = null);
 
+    /**
+     * @param  string|null  $queue
+     * @return int
+     */
     public function pendingSize($queue = null)
     {
         return $this->size($queue);
     }
 
+    /**
+     * @param  string|null  $queue
+     * @return int
+     */
     public function delayedSize($queue = null)
     {
         return 0;
     }
 
+    /**
+     * @param  string|null  $queue
+     * @return int
+     */
     public function reservedSize($queue = null)
     {
         return 0;
     }
 
+    /**
+     * @param  string|null  $queue
+     * @return int|null
+     */
     public function creationTimeOfOldestPendingJob($queue = null)
     {
         return null;

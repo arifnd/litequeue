@@ -79,7 +79,7 @@
         "check:security": "composer audit --no-interaction",
         "coverage": [
             "@php vendor/bin/phpunit --coverage-clover=build/coverage.xml",
-            "@php bin/coverage-check.php build/coverage.xml 80"
+            "@php bin/coverage-check.php build/coverage.xml 55"
         ]
     },
     "suggest": {

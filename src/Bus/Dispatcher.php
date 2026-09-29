@@ -70,6 +70,10 @@ class Dispatcher implements DispatcherContract
             ->then($execute);
     }
 
+    /**
+     * @param  mixed  $command
+     * @param  mixed  $handler
+     */
     public function dispatchAfterResponse($command, $handler = null): void
     {
         if (method_exists($this->container, 'terminating')) {

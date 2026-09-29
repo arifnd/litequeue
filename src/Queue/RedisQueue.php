@@ -38,6 +38,10 @@ class RedisQueue extends Queue
         $this->migrationBatchSize = $migrationBatchSize;
     }
 
+    /**
+     * @param  string|null  $queue
+     * @return int
+     */
     public function size($queue = null)
     {
         $queue = $this->getQueue($queue);
@@ -51,21 +55,37 @@ class RedisQueue extends Queue
         );
     }
 
+    /**
+     * @param  string|null  $queue
+     * @return int
+     */
     public function pendingSize($queue = null)
     {
         return (int) $this->getConnection()->llen($this->getQueue($queue));
     }
 
+    /**
+     * @param  string|null  $queue
+     * @return int
+     */
     public function delayedSize($queue = null)
     {
         return (int) $this->getConnection()->zcard($this->getQueue($queue).':delayed');
     }
 
+    /**
+     * @param  string|null  $queue
+     * @return int
+     */
     public function reservedSize($queue = null)
     {
         return (int) $this->getConnection()->zcard($this->getQueue($queue).':reserved');
     }
 
+    /**
+     * @param  string|null  $queue
+     * @return int|null
+     */
     public function creationTimeOfOldestPendingJob($queue = null)
     {
         $payload = $this->getConnection()->lindex($this->getQueue($queue), 0);
@@ -76,7 +96,7 @@ class RedisQueue extends Queue
 
         $data = json_decode($payload, true);
 
-        return $data['createdAt'] ?? null;
+        return isset($data['createdAt']) ? (int) $data['createdAt'] : null;
     }
 
     /**

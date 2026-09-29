@@ -76,21 +76,37 @@ class QueueFake implements QueueContract
         return null;
     }
 
+    /**
+     * @param  string|null  $queue
+     * @return int
+     */
     public function pendingSize($queue = null)
     {
         return count($this->jobs);
     }
 
+    /**
+     * @param  string|null  $queue
+     * @return int
+     */
     public function delayedSize($queue = null)
     {
         return 0;
     }
 
+    /**
+     * @param  string|null  $queue
+     * @return int
+     */
     public function reservedSize($queue = null)
     {
         return 0;
     }
 
+    /**
+     * @param  string|null  $queue
+     * @return int|null
+     */
     public function creationTimeOfOldestPendingJob($queue = null)
     {
         return null;
