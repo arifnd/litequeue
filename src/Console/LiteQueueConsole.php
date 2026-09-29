@@ -40,7 +40,7 @@ class LiteQueueConsole
         foreach (static::commands() as $command) {
             $instance = new $command;
             $instance->setLaravel($container);
-            $application->add($instance);
+            $application->addCommand($instance);
         }
 
         return $application->run();

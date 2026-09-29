@@ -6,12 +6,12 @@ namespace Arifnd\LiteQueue\Worker;
 
 use Arifnd\LiteQueue\Exceptions\MaxAttemptsExceededException;
 use Arifnd\LiteQueue\Queue\WorkerOptions;
+use Arifnd\LiteQueue\Support\JobEventFactory;
 use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Contracts\Events\Dispatcher as EventsDispatcher;
 use Illuminate\Contracts\Queue\Factory as QueueManager;
 use Illuminate\Contracts\Queue\Job as JobContract;
-use Illuminate\Queue\Events\JobAttempted;
 use Illuminate\Queue\Events\JobExceptionOccurred;
 use Illuminate\Queue\Events\JobPopped;
 use Illuminate\Queue\Events\JobPopping;
@@ -92,6 +92,8 @@ class Worker
 
     public function process(string $connectionName, JobContract $job, WorkerOptions $options): void
     {
+        $exception = null;
+
         try {
             $this->raiseBeforeJobEvent($connectionName, $job);
 
@@ -105,7 +107,7 @@ class Worker
 
             $this->raiseAfterJobEvent($connectionName, $job);
         } catch (Throwable $e) {
-            $exceptionOccurred = true;
+            $exception = $e;
 
             try {
                 $this->handleJobException($connectionName, $job, $options, $e);
@@ -115,11 +117,7 @@ class Worker
                 }
             }
         } finally {
-            $this->events->dispatch(new JobAttempted(
-                $connectionName,
-                $job,
-                $exceptionOccurred ?? false
-            ));
+            $this->events->dispatch(JobEventFactory::attempted($connectionName, $job, $exception));
         }
     }
 

@@ -64,6 +64,26 @@ class QueueFake implements QueueContract
         return null;
     }
 
+    public function pendingSize($queue = null)
+    {
+        return count($this->jobs);
+    }
+
+    public function delayedSize($queue = null)
+    {
+        return 0;
+    }
+
+    public function reservedSize($queue = null)
+    {
+        return 0;
+    }
+
+    public function creationTimeOfOldestPendingJob($queue = null)
+    {
+        return null;
+    }
+
     public function getConnectionName()
     {
         return $this->connectionName;

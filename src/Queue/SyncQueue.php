@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Arifnd\LiteQueue\Queue;
 
 use Arifnd\LiteQueue\Jobs\SyncJob;
+use Arifnd\LiteQueue\Support\JobEventFactory;
 use Illuminate\Contracts\Queue\Job as JobContract;
-use Illuminate\Queue\Events\JobAttempted;
 use Illuminate\Queue\Events\JobExceptionOccurred;
 use Illuminate\Queue\Events\JobProcessed;
 use Illuminate\Queue\Events\JobProcessing;
@@ -34,15 +34,17 @@ class SyncQueue extends Queue
     {
         $queueJob = $this->resolveJob($this->createPayload($job, $this->getQueue($queue), $data), $queue);
 
+        $exception = null;
+
         try {
             $this->raiseBeforeJobEvent($queueJob);
             $queueJob->fire();
             $this->raiseAfterJobEvent($queueJob);
         } catch (Throwable $e) {
-            $exceptionOccurred = true;
+            $exception = $e;
             $this->handleException($queueJob, $e);
         } finally {
-            $this->raiseJobAttemptedEvent($queueJob, $exceptionOccurred ?? false);
+            $this->raiseJobAttemptedEvent($queueJob, $exception);
         }
 
         return 0;
@@ -76,10 +78,12 @@ class SyncQueue extends Queue
         }
     }
 
-    protected function raiseJobAttemptedEvent(JobContract $job, bool $exceptionOccurred = false): void
+    protected function raiseJobAttemptedEvent(JobContract $job, ?Throwable $exception = null): void
     {
         if ($this->container->bound('events')) {
-            $this->container->make('events')->dispatch(new JobAttempted($this->connectionName, $job, $exceptionOccurred));
+            $this->container->make('events')->dispatch(
+                JobEventFactory::attempted((string) $this->connectionName, $job, $exception)
+            );
         }
     }
 

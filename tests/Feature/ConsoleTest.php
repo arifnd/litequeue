@@ -51,7 +51,7 @@ final class ConsoleTest extends TestCase
         $command->setLaravel($container);
 
         $application = new SymfonyApplication;
-        $application->add($command);
+        $application->addCommand($command);
 
         $tester = new CommandTester($command);
         $tester->execute(['name' => 'SendEmail']);
@@ -69,7 +69,7 @@ final class ConsoleTest extends TestCase
         $command->setLaravel($container);
 
         $application = new SymfonyApplication;
-        $application->add($command);
+        $application->addCommand($command);
 
         (new CommandTester($command))->execute(['name' => 'SyncThing', '--sync' => true]);
 

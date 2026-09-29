@@ -99,6 +99,6 @@ final class RedisQueueTest extends TestCase
 
         $this->assertArrayHasKey('id', $payload);
         $this->assertSame(0, $payload['attempts']);
-        $this->assertSame(0, $payload['delay']);
+        $this->assertNull($payload['delay']);
     }
 }

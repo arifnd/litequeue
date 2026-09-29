@@ -10,6 +10,7 @@ use Illuminate\Contracts\Bus\Dispatcher as DispatcherContract;
 use Illuminate\Contracts\Queue\Queue as QueueContract;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Pipeline\Pipeline;
+use Illuminate\Support\Collection;
 use RuntimeException;
 
 class Dispatcher implements DispatcherContract
@@ -78,6 +79,26 @@ class Dispatcher implements DispatcherContract
         }
 
         $this->dispatchNow($command, $handler);
+    }
+
+    /**
+     * Dispatch a chain of commands.
+     *
+     * @param  mixed  $jobs
+     * @param  mixed  $chain
+     * @return mixed
+     */
+    public function chain($jobs = null, $chain = '')
+    {
+        $jobs = Collection::wrap($jobs)->values();
+
+        $first = $jobs->shift();
+
+        if ($first !== null && method_exists($first, 'chain')) {
+            $first->chain($jobs->all());
+        }
+
+        return $this->dispatch($first);
     }
 
     /**

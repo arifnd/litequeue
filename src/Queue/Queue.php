@@ -33,6 +33,26 @@ abstract class Queue implements QueueContract
 
     abstract public function pop($queue = null);
 
+    public function pendingSize($queue = null)
+    {
+        return $this->size($queue);
+    }
+
+    public function delayedSize($queue = null)
+    {
+        return 0;
+    }
+
+    public function reservedSize($queue = null)
+    {
+        return 0;
+    }
+
+    public function creationTimeOfOldestPendingJob($queue = null)
+    {
+        return null;
+    }
+
     public function push($job, $data = '', $queue = null)
     {
         return $this->enqueueUsing(
