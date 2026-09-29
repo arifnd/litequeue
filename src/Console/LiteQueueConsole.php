@@ -20,6 +20,7 @@ use Illuminate\Config\Repository;
 use Illuminate\Container\Container;
 use Illuminate\Contracts\Bus\Dispatcher as DispatcherContract;
 use Illuminate\Contracts\Cache\Repository as Cache;
+use Illuminate\Contracts\Debug\ExceptionHandler as ExceptionHandlerContract;
 use Illuminate\Contracts\Events\Dispatcher as EventsDispatcher;
 use Illuminate\Contracts\Queue\Factory as QueueFactory;
 use Illuminate\Contracts\Redis\Factory as RedisFactory;
@@ -95,6 +96,9 @@ class LiteQueueConsole
 
         $container->singleton(Cache::class, fn () => new CacheRepository(new ArrayStore));
 
+        $container->singleton(ExceptionHandler::class, fn () => new ExceptionHandler);
+        $container->alias(ExceptionHandler::class, ExceptionHandlerContract::class);
+
         static::registerDatabase($container);
 
         $container->singleton(QueueManager::class, function ($c) use ($config) {
@@ -128,6 +132,7 @@ class LiteQueueConsole
         $container->singleton(Worker::class, fn ($c) => new Worker(
             $c->make(QueueManager::class),
             $c->make(EventsDispatcher::class),
+            $c->make(ExceptionHandlerContract::class),
         ));
 
         $container->singleton(FailedJobProvider::class, fn () => new NullFailedJobProvider);

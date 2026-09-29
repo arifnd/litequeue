@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Arifnd\LiteQueue\Console\Commands;
 
+use Arifnd\LiteQueue\Console\ExceptionHandler;
 use Arifnd\LiteQueue\Queue\WorkerOptions;
 use Arifnd\LiteQueue\Worker\Worker;
 use Illuminate\Console\Command;
@@ -31,6 +32,10 @@ class WorkCommand extends Command
 
     public function handle(): int
     {
+        if ($this->laravel->bound(ExceptionHandler::class)) {
+            $this->laravel->make(ExceptionHandler::class)->setOutput($this->output);
+        }
+
         $connectionName = $this->argument('connection')
             ?: $this->laravel['config']['default']
             ?? 'sync';

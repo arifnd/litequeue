@@ -8,11 +8,13 @@ use Arifnd\LiteQueue\Console\Commands\InstallCommand;
 use Arifnd\LiteQueue\Console\Commands\MakeJobCommand;
 use Arifnd\LiteQueue\Console\Commands\MakeServiceCommand;
 use Arifnd\LiteQueue\Console\Commands\MakeTraitCommand;
+use Arifnd\LiteQueue\Console\ExceptionHandler;
 use Arifnd\LiteQueue\Console\LiteQueueConsole;
 use Arifnd\LiteQueue\Queue\QueueManager;
 use Arifnd\LiteQueue\Queue\SyncQueue;
 use Arifnd\LiteQueue\Tests\TestCase;
 use Illuminate\Console\Command;
+use Illuminate\Contracts\Debug\ExceptionHandler as ExceptionHandlerContract;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Filesystem\Filesystem;
@@ -156,6 +158,13 @@ final class ConsoleTest extends TestCase
         $result = $method->invoke(null, $redis, []);
 
         $this->assertSame('10.0.0.9', $result['horizon']['host']);
+    }
+
+    public function test_bootstrap_binds_a_console_exception_handler(): void
+    {
+        $container = LiteQueueConsole::bootstrap($this->basePath);
+
+        $this->assertInstanceOf(ExceptionHandler::class, $container->make(ExceptionHandlerContract::class));
     }
 
     public function test_bootstrap_boots_eloquent_and_supports_model_crud(): void

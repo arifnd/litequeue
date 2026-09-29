@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Arifnd\LiteQueue\Console\Commands;
 
+use Arifnd\LiteQueue\Console\ExceptionHandler;
 use Arifnd\LiteQueue\Supervisor\ArraySupervisorStore;
 use Arifnd\LiteQueue\Supervisor\Contracts\SupervisorStore;
 use Arifnd\LiteQueue\Supervisor\HorizonStateRepository;
@@ -36,6 +37,10 @@ class SupervisorCommand extends Command
 
     public function handle(): int
     {
+        if ($this->laravel->bound(ExceptionHandler::class)) {
+            $this->laravel->make(ExceptionHandler::class)->setOutput($this->output);
+        }
+
         $config = $this->laravel['config']['supervisor'] ?? [];
 
         $options = SupervisorOptions::fromConfig($this->mergeOptions($config));
