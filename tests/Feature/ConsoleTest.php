@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Arifnd\LiteQueue\Tests\Feature;
 
+use Arifnd\LiteQueue\Console\Bootstrap\RegisterRedis;
 use Arifnd\LiteQueue\Console\Commands\InstallCommand;
 use Arifnd\LiteQueue\Console\Commands\MakeJobCommand;
 use Arifnd\LiteQueue\Console\Commands\MakeServiceCommand;
@@ -134,7 +135,7 @@ final class ConsoleTest extends TestCase
 
     public function test_bootstrap_registers_a_horizon_connection_with_the_configured_prefix(): void
     {
-        $method = new \ReflectionMethod(LiteQueueConsole::class, 'registerHorizonConnection');
+        $method = new \ReflectionMethod(RegisterRedis::class, 'registerHorizonConnection');
 
         $redis = [
             'default' => ['host' => '127.0.0.1', 'port' => 6379],
@@ -154,7 +155,7 @@ final class ConsoleTest extends TestCase
 
     public function test_bootstrap_keeps_an_existing_horizon_connection(): void
     {
-        $method = new \ReflectionMethod(LiteQueueConsole::class, 'registerHorizonConnection');
+        $method = new \ReflectionMethod(RegisterRedis::class, 'registerHorizonConnection');
 
         $redis = [
             'default' => ['host' => '127.0.0.1'],

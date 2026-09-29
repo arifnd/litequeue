@@ -4,54 +4,17 @@ declare(strict_types=1);
 
 namespace Arifnd\LiteQueue\Console;
 
-use Arifnd\LiteQueue\Bus\Dispatcher;
-use Arifnd\LiteQueue\Connections\ClosureConnector;
-use Arifnd\LiteQueue\Connections\NullConnector;
-use Arifnd\LiteQueue\Connections\RedisConnector;
-use Arifnd\LiteQueue\Connections\SyncConnector;
-use Arifnd\LiteQueue\Contracts\FailedJobProvider;
-use Arifnd\LiteQueue\Failed\NullFailedJobProvider;
-use Arifnd\LiteQueue\Queue\PayloadFactory;
-use Arifnd\LiteQueue\Queue\QueueManager;
-use Arifnd\LiteQueue\Worker\Worker;
-use Illuminate\Cache\ArrayStore;
-use Illuminate\Cache\Repository as CacheRepository;
-use Illuminate\Config\Repository;
 use Illuminate\Container\Container;
-use Illuminate\Contracts\Bus\Dispatcher as DispatcherContract;
-use Illuminate\Contracts\Cache\Repository as Cache;
-use Illuminate\Contracts\Debug\ExceptionHandler as ExceptionHandlerContract;
-use Illuminate\Contracts\Events\Dispatcher as EventsDispatcher;
-use Illuminate\Contracts\Foundation\Application as ApplicationContract;
-use Illuminate\Contracts\Queue\Factory as QueueFactory;
-use Illuminate\Contracts\Redis\Factory as RedisFactory;
-use Illuminate\Database\ConnectionResolverInterface;
-use Illuminate\Database\Connectors\ConnectionFactory;
-use Illuminate\Database\DatabaseManager;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Events\Dispatcher as Events;
-use Illuminate\Redis\RedisManager;
-use Illuminate\Support\Facades\Facade;
 use Symfony\Component\Console\Application;
 
 class LiteQueueConsole
 {
-    protected static ?Container $previousContainer = null;
-
-    protected static ?ApplicationContract $previousFacadeApp = null;
-
-    protected static ?ConnectionResolverInterface $previousModelResolver = null;
-
-    protected static ?EventsDispatcher $previousModelDispatcher = null;
-
-    protected static bool $bootstrapped = false;
-
     /**
      * @param  array<int, string>|null  $argv
      */
     public static function run(?array $argv = null): int
     {
-        $container = static::bootstrap();
+        $container = Kernel::bootstrap();
 
         $application = new Application('LiteQueue', static::version());
 
@@ -62,6 +25,16 @@ class LiteQueueConsole
         }
 
         return $application->run();
+    }
+
+    public static function bootstrap(?string $basePath = null): Container
+    {
+        return Kernel::bootstrap($basePath);
+    }
+
+    public static function reset(): void
+    {
+        Kernel::reset();
     }
 
     public static function version(): string
@@ -86,269 +59,5 @@ class LiteQueueConsole
             Commands\FlushCommand::class,
             Commands\InstallCommand::class,
         ];
-    }
-
-    public static function bootstrap(?string $basePath = null): Container
-    {
-        $basePath ??= getcwd() ?: '.';
-
-        static::captureGlobalState();
-
-        $container = new ConsoleContainer;
-        Container::setInstance($container);
-        Facade::setFacadeApplication($container);
-
-        $config = static::loadConfig($basePath);
-        $database = static::loadDatabaseConfig($basePath);
-
-        $container->instance('config', new Repository($config + ['database' => $database]));
-        $container->instance('litequeue.base_path', $basePath);
-
-        $container->singleton(EventsDispatcher::class, fn () => new Events);
-        $container->alias(EventsDispatcher::class, 'events');
-
-        $container->singleton(Cache::class, fn () => new CacheRepository(new ArrayStore));
-
-        $container->singleton(ExceptionHandler::class, fn () => new ExceptionHandler);
-        $container->alias(ExceptionHandler::class, ExceptionHandlerContract::class);
-
-        static::registerDatabase($container);
-
-        $container->singleton(QueueManager::class, function ($c) use ($config) {
-            $manager = new QueueManager($c, $config);
-
-            $manager->addConnector('sync', new SyncConnector($c));
-            $manager->addConnector('null', new NullConnector($c));
-
-            if (class_exists(RedisConnector::class)) {
-                $manager->addConnector('litequeue_redis', new ClosureConnector(
-                    fn (array $connection) => (new RedisConnector($c, $c->make(RedisFactory::class)))->connect($connection)
-                ));
-            }
-
-            return $manager;
-        });
-        $container->alias(QueueManager::class, QueueFactory::class);
-
-        $container->singleton(PayloadFactory::class, fn ($c) => new PayloadFactory($c));
-
-        $container->singleton(Dispatcher::class, function ($c) {
-            $dispatcher = new Dispatcher($c);
-            $dispatcher->setQueueResolver(
-                fn ($connection = null) => $c->make(QueueManager::class)->connection($connection)
-            );
-
-            return $dispatcher;
-        });
-        $container->alias(Dispatcher::class, DispatcherContract::class);
-
-        $container->singleton(Worker::class, fn ($c) => new Worker(
-            $c->make(QueueManager::class),
-            $c->make(EventsDispatcher::class),
-            $c->make(ExceptionHandlerContract::class),
-        ));
-
-        $container->singleton(FailedJobProvider::class, fn () => new NullFailedJobProvider);
-
-        if (static::redisAvailable($config)) {
-            $container->singleton(RedisFactory::class, function ($c) use ($config) {
-                $redis = $config['redis'] ?? [];
-
-                if (empty($redis) || ! isset($redis['default'])) {
-                    $redis = [
-                        'client' => extension_loaded('redis') ? 'phpredis' : 'predis',
-                        'default' => [
-                            'host' => getenv('REDIS_HOST') ?: '127.0.0.1',
-                            'password' => getenv('REDIS_PASSWORD') ?: null,
-                            'port' => (int) (getenv('REDIS_PORT') ?: 6379),
-                            'database' => (int) (getenv('REDIS_DB') ?: 0),
-                        ],
-                        'options' => ['prefix' => getenv('REDIS_PREFIX') ?: ''],
-                    ];
-                }
-
-                $redis = static::registerHorizonConnection($redis, $config);
-
-                return new RedisManager($c, $redis['client'] ?? 'phpredis', $redis);
-            });
-        }
-
-        return $container;
-    }
-
-    /**
-     * Snapshot the global state that bootstrap mutates so it can be restored.
-     */
-    protected static function captureGlobalState(): void
-    {
-        if (static::$bootstrapped) {
-            return;
-        }
-
-        static::$previousContainer = Container::getInstance();
-        static::$previousFacadeApp = Facade::getFacadeApplication();
-        static::$previousModelResolver = Model::getConnectionResolver();
-        static::$previousModelDispatcher = Model::getEventDispatcher();
-        static::$bootstrapped = true;
-    }
-
-    /**
-     * Restore the global state replaced by bootstrap (container, facades, Eloquent).
-     */
-    public static function reset(): void
-    {
-        Facade::clearResolvedInstances();
-        Facade::setFacadeApplication(static::$previousFacadeApp);
-
-        if (static::$previousContainer !== null) {
-            Container::setInstance(static::$previousContainer);
-        }
-
-        if (static::$previousModelResolver !== null) {
-            Model::setConnectionResolver(static::$previousModelResolver);
-        } else {
-            Model::unsetConnectionResolver();
-        }
-
-        if (static::$previousModelDispatcher !== null) {
-            Model::setEventDispatcher(static::$previousModelDispatcher);
-        } else {
-            Model::unsetEventDispatcher();
-        }
-
-        PayloadFactory::createPayloadUsing(null);
-        static::$bootstrapped = false;
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    protected static function loadConfig(string $basePath): array
-    {
-        $candidates = [
-            $basePath.'/config/litequeue.php',
-            $basePath.'/litequeue.php',
-            dirname(__DIR__, 2).'/config/litequeue.php',
-        ];
-
-        foreach ($candidates as $file) {
-            if (is_file($file)) {
-                $config = require $file;
-
-                if (is_array($config)) {
-                    return $config;
-                }
-            }
-        }
-
-        return [];
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    protected static function loadDatabaseConfig(string $basePath): array
-    {
-        $candidates = [
-            $basePath.'/config/database.php',
-            $basePath.'/database.php',
-            dirname(__DIR__, 2).'/config/database.php',
-        ];
-
-        foreach ($candidates as $file) {
-            if (is_file($file)) {
-                $config = require $file;
-
-                if (is_array($config)) {
-                    return static::resolveSqlitePaths($config, $basePath);
-                }
-            }
-        }
-
-        return [];
-    }
-
-    /**
-     * Resolve relative SQLite paths against the application base path.
-     *
-     * @param  array<string, mixed>  $config
-     * @return array<string, mixed>
-     */
-    protected static function resolveSqlitePaths(array $config, string $basePath): array
-    {
-        foreach ($config['connections'] ?? [] as $name => $connection) {
-            $database = $connection['database'] ?? null;
-
-            if (($connection['driver'] ?? null) !== 'sqlite'
-                || ! is_string($database)
-                || $database === ''
-                || $database === ':memory:'
-                || str_starts_with($database, 'file:')
-                || str_starts_with($database, '/')) {
-                continue;
-            }
-
-            $config['connections'][$name]['database'] = rtrim($basePath, '/').'/'.ltrim($database, '/');
-        }
-
-        return $config;
-    }
-
-    /**
-     * Boot a database manager and Eloquent so jobs can use models standalone.
-     */
-    protected static function registerDatabase(Container $container): void
-    {
-        $container->singleton('db.factory', fn ($c) => new ConnectionFactory($c));
-
-        $container->singleton('db', fn ($c) => new DatabaseManager($c, $c->make('db.factory')));
-        $container->alias('db', DatabaseManager::class);
-        $container->alias('db', ConnectionResolverInterface::class);
-
-        Model::setConnectionResolver($container->make('db'));
-        Model::setEventDispatcher($container->make(EventsDispatcher::class));
-    }
-
-    /**
-     * Ensure a Redis connection carrying the Horizon prefix exists for the
-     * supervisor state, without disturbing the queue connection prefix.
-     *
-     * @param  array<string, mixed>  $redis
-     * @param  array<string, mixed>  $config
-     * @return array<string, mixed>
-     */
-    protected static function registerHorizonConnection(array $redis, array $config): array
-    {
-        $name = (string) ($config['supervisor']['horizon']['redis_connection'] ?? 'horizon');
-
-        if (isset($redis[$name])) {
-            return $redis;
-        }
-
-        $base = $redis['default'] ?? [];
-
-        $redis[$name] = array_merge($base, [
-            'options' => array_merge($base['options'] ?? [], [
-                'prefix' => static::horizonPrefix($config),
-            ]),
-        ]);
-
-        return $redis;
-    }
-
-    /**
-     * @param  array<string, mixed>  $config
-     */
-    protected static function horizonPrefix(array $config): string
-    {
-        return (string) ($config['supervisor']['horizon']['prefix'] ?? 'laravel_horizon:');
-    }
-
-    /**
-     * @param  array<string, mixed>  $config
-     */
-    protected static function redisAvailable(array $config): bool
-    {
-        return extension_loaded('redis') || class_exists('Predis\\Client') || ! empty($config['redis']);
     }
 }

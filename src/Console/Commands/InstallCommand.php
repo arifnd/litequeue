@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Arifnd\LiteQueue\Console\Commands;
 
+use Arifnd\LiteQueue\Console\ConfigLoader;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
 
@@ -32,17 +33,11 @@ class InstallCommand extends Command
 
     protected function createSqliteDatabase(Filesystem $files, string $basePath): void
     {
-        $path = $basePath.'/config/database.php';
-
-        if (! $files->exists($path)) {
+        if (! $files->exists($basePath.'/config/database.php')) {
             return;
         }
 
-        $config = require $path;
-
-        if (! is_array($config)) {
-            return;
-        }
+        $config = (new ConfigLoader($basePath))->database();
 
         $connection = $config['connections'][$config['default'] ?? null] ?? null;
         $database = $connection['database'] ?? null;
@@ -53,10 +48,6 @@ class InstallCommand extends Command
 
         if ($database === ':memory:' || str_starts_with($database, 'file:')) {
             return;
-        }
-
-        if (! str_starts_with($database, '/')) {
-            $database = rtrim($basePath, '/').'/'.ltrim($database, '/');
         }
 
         if (! $files->exists($database)) {
