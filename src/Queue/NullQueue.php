@@ -16,6 +16,12 @@ class NullQueue extends Queue
         return null;
     }
 
+    /**
+     * @param  string  $payload
+     * @param  string|null  $queue
+     * @param  array<string, mixed>  $options
+     * @return null
+     */
     public function pushRaw($payload, $queue = null, array $options = [])
     {
         return null;

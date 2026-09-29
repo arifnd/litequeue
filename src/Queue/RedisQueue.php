@@ -79,6 +79,12 @@ class RedisQueue extends Queue
         return $data['createdAt'] ?? null;
     }
 
+    /**
+     * @param  string  $payload
+     * @param  string|null  $queue
+     * @param  array<string, mixed>  $options
+     * @return string|null
+     */
     public function pushRaw($payload, $queue = null, array $options = [])
     {
         $this->getConnection()->eval(
@@ -206,11 +212,20 @@ class RedisQueue extends Queue
         return [$job, $reserved];
     }
 
+    /**
+     * @param  string|null  $queue
+     * @param  object  $job
+     */
     public function deleteReserved($queue, $job): void
     {
         $this->getConnection()->zrem($this->getQueue($queue).':reserved', $job->getReservedJob());
     }
 
+    /**
+     * @param  string|null  $queue
+     * @param  object  $job
+     * @param  int  $delay
+     */
     public function deleteAndRelease($queue, $job, $delay): void
     {
         $queue = $this->getQueue($queue);
@@ -225,6 +240,9 @@ class RedisQueue extends Queue
         );
     }
 
+    /**
+     * @param  string|null  $queue
+     */
     public function clear($queue): int
     {
         $queue = $this->getQueue($queue);
@@ -239,6 +257,9 @@ class RedisQueue extends Queue
         );
     }
 
+    /**
+     * @param  string|null  $queue
+     */
     public function getQueue($queue): string
     {
         return 'queues:'.(string) QueueName::parse(is_string($queue) ? $queue : null, $this->default);

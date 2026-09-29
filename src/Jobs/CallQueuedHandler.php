@@ -15,6 +15,7 @@ use Illuminate\Contracts\Encryption\Encrypter;
 use Illuminate\Contracts\Queue\Job;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pipeline\Pipeline;
 use ReflectionClass;
@@ -27,6 +28,9 @@ class CallQueuedHandler
         protected Container $container,
     ) {}
 
+    /**
+     * @param  array<string, mixed>  $data
+     */
     public function call(Job $job, array $data): void
     {
         try {
@@ -147,6 +151,9 @@ class CallQueuedHandler
         return $command instanceof ShouldBeUniqueUntilProcessing;
     }
 
+    /**
+     * @param  ModelNotFoundException<Model>  $e
+     */
     protected function handleModelNotFound(Job $job, ModelNotFoundException $e): void
     {
         $class = $job->resolveQueuedJobClass();

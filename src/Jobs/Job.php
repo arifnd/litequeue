@@ -98,6 +98,9 @@ abstract class Job implements JobContract
         }
     }
 
+    /**
+     * @param  mixed  $e
+     */
     protected function failed($e): void
     {
         $payload = $this->payload();
@@ -130,6 +133,9 @@ abstract class Job implements JobContract
         return $this->instance;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function payload(): array
     {
         return json_decode($this->getRawBody(), true, 512, JSON_THROW_ON_ERROR);
@@ -145,11 +151,17 @@ abstract class Job implements JobContract
         return $this->payload()['maxExceptions'] ?? null;
     }
 
+    /**
+     * @return bool
+     */
     public function shouldFailOnTimeout()
     {
-        return $this->payload()['failOnTimeout'] ?? false;
+        return (bool) ($this->payload()['failOnTimeout'] ?? false);
     }
 
+    /**
+     * @return mixed
+     */
     public function backoff()
     {
         return $this->payload()['backoff'] ?? $this->payload()['delay'] ?? null;

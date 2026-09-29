@@ -102,6 +102,7 @@ class Dispatcher implements DispatcherContract
     }
 
     /**
+     * @param  object  $command
      * @return mixed
      */
     public function dispatchToQueue($command)
@@ -124,6 +125,10 @@ class Dispatcher implements DispatcherContract
         return $this->pushCommandToQueue($queue, $command);
     }
 
+    /**
+     * @param  object  $command
+     * @return mixed
+     */
     protected function pushCommandToQueue(QueueContract $queue, $command)
     {
         if (isset($command->queue, $command->delay)) {
@@ -159,6 +164,10 @@ class Dispatcher implements DispatcherContract
         return null;
     }
 
+    /**
+     * @param  array<int, mixed>  $pipes
+     * @return $this
+     */
     public function pipeThrough(array $pipes)
     {
         $this->pipes = $pipes;
@@ -166,6 +175,10 @@ class Dispatcher implements DispatcherContract
         return $this;
     }
 
+    /**
+     * @param  array<class-string, mixed>  $map
+     * @return $this
+     */
     public function map(array $map)
     {
         $this->maps = array_merge($this->maps, $map);

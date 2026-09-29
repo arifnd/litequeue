@@ -30,6 +30,11 @@ class SyncQueue extends Queue
         return $this->push($job, $data, $queue);
     }
 
+    /**
+     * @param  mixed  $job
+     * @param  mixed  $data
+     * @param  string|null  $queue
+     */
     protected function executeJob($job, $data = '', $queue = null): int
     {
         $queueJob = $this->resolveJob($this->createPayload($job, $this->getQueue($queue), $data), $queue);
@@ -94,6 +99,12 @@ class SyncQueue extends Queue
         }
     }
 
+    /**
+     * @param  string  $payload
+     * @param  string|null  $queue
+     * @param  array<string, mixed>  $options
+     * @return null
+     */
     public function pushRaw($payload, $queue = null, array $options = [])
     {
         return null;

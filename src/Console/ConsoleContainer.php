@@ -59,6 +59,9 @@ class ConsoleContainer extends Container implements Application
         return $this->basePath('storage/'.$this->segments($path));
     }
 
+    /**
+     * @param  string|array<int, string>  ...$environments
+     */
     public function environment(...$environments): string|bool
     {
         $current = (string) (getenv('APP_ENV') ?: 'production');
@@ -69,7 +72,7 @@ class ConsoleContainer extends Container implements Application
 
         foreach ($environments as $environment) {
             foreach ((array) $environment as $pattern) {
-                if (is_string($pattern) && Str::is($pattern, $current)) {
+                if (Str::is($pattern, $current)) {
                     return true;
                 }
             }
@@ -128,6 +131,9 @@ class ConsoleContainer extends Container implements Application
 
     public function booted($callback): void {}
 
+    /**
+     * @param  array<int, mixed>  $bootstrappers
+     */
     public function bootstrapWith(array $bootstrappers): void {}
 
     public function getLocale(): string
@@ -140,6 +146,9 @@ class ConsoleContainer extends Container implements Application
         return 'App';
     }
 
+    /**
+     * @return array<int, mixed>
+     */
     public function getProviders($provider): array
     {
         return [];

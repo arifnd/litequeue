@@ -75,6 +75,11 @@
             "@format -- --test",
             "@analyse",
             "@test"
+        ],
+        "check:security": "composer audit --no-interaction",
+        "coverage": [
+            "@php vendor/bin/phpunit --coverage-clover=build/coverage.xml",
+            "@php bin/coverage-check.php build/coverage.xml 80"
         ]
     },
     "suggest": {

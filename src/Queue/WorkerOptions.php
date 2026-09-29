@@ -11,6 +11,7 @@ final class WorkerOptions
 {
     /**
      * @param  string|array<int, string>  $queue
+     * @param  int|string|array<int, int|string>  $backoff
      */
     public function __construct(
         public string $name = 'default',

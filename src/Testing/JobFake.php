@@ -26,6 +26,9 @@ class JobFake implements JobContract
         return '1';
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function payload(): array
     {
         return ['uuid' => $this->uuid];

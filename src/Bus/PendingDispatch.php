@@ -18,6 +18,9 @@ class PendingDispatch
         protected bool $shouldDispatch = true,
     ) {}
 
+    /**
+     * @param  mixed  $connection
+     */
     public function onConnection($connection): static
     {
         $this->job->connection = $connection;
@@ -25,6 +28,9 @@ class PendingDispatch
         return $this;
     }
 
+    /**
+     * @param  mixed  $queue
+     */
     public function onQueue($queue): static
     {
         $this->job->queue = $queue;
@@ -32,6 +38,9 @@ class PendingDispatch
         return $this;
     }
 
+    /**
+     * @param  mixed  $delay
+     */
     public function delay($delay): static
     {
         $this->job->delay = $delay;
@@ -67,6 +76,9 @@ class PendingDispatch
         return $this;
     }
 
+    /**
+     * @param  mixed  $chain
+     */
     public function chain($chain): static
     {
         if (method_exists($this->job, 'chain')) {
@@ -81,6 +93,9 @@ class PendingDispatch
         return $this->job;
     }
 
+    /**
+     * @param  array<int, mixed>  $parameters
+     */
     public function __call(string $method, array $parameters): mixed
     {
         if (method_exists($this->job, $method)) {

@@ -44,7 +44,7 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
           extensions: redis, pcntl
-          coverage: none
+          coverage: pcov
 
       - name: Install dependencies
         run: |
@@ -59,3 +59,9 @@ jobs:
         env:
           REDIS_HOST: 127.0.0.1
         run: composer check
+
+      - name: Coverage floor
+        if: matrix.php == '8.4' && matrix.laravel == '13.*'
+        env:
+          REDIS_HOST: 127.0.0.1
+        run: composer coverage

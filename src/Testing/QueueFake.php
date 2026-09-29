@@ -30,6 +30,12 @@ class QueueFake implements QueueContract
         return null;
     }
 
+    /**
+     * @param  string  $payload
+     * @param  string|null  $queue
+     * @param  array<string, mixed>  $options
+     * @return null
+     */
     public function pushRaw($payload, $queue = null, array $options = [])
     {
         $this->jobs[] = (object) ['job' => $payload, 'queue' => $queue, 'data' => ''];
@@ -47,6 +53,12 @@ class QueueFake implements QueueContract
         return $this->pushOn($queue, $job, $data);
     }
 
+    /**
+     * @param  mixed  $jobs
+     * @param  mixed  $data
+     * @param  string|null  $queue
+     * @return void
+     */
     public function bulk($jobs, $data = '', $queue = null)
     {
         foreach ((array) $jobs as $job) {
@@ -97,6 +109,7 @@ class QueueFake implements QueueContract
     }
 
     /**
+     * @param  mixed  $job
      * @return Collection<int, object>
      */
     public function pushed($job = null, ?Closure $callback = null): Collection
@@ -114,6 +127,9 @@ class QueueFake implements QueueContract
         })->values();
     }
 
+    /**
+     * @param  mixed  $job
+     */
     public function assertPushed($job, ?Closure $callback = null): void
     {
         PHPUnit::assertTrue(
@@ -122,6 +138,9 @@ class QueueFake implements QueueContract
         );
     }
 
+    /**
+     * @param  mixed  $job
+     */
     public function assertNotPushed($job, ?Closure $callback = null): void
     {
         PHPUnit::assertFalse(
@@ -130,6 +149,9 @@ class QueueFake implements QueueContract
         );
     }
 
+    /**
+     * @param  mixed  $job
+     */
     public function assertPushedOn(string $queue, $job, ?Closure $callback = null): void
     {
         $this->assertPushed($job, function ($job, $pushedQueue, $data) use ($queue, $callback) {
@@ -137,6 +159,9 @@ class QueueFake implements QueueContract
         });
     }
 
+    /**
+     * @param  mixed  $job
+     */
     public function assertPushedTimes($job, int $times = 1): void
     {
         $count = $this->pushed($job)->count();

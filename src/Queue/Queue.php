@@ -27,6 +27,12 @@ abstract class Queue implements QueueContract
         protected bool $dispatchAfterCommit = false,
     ) {}
 
+    /**
+     * @param  string  $payload
+     * @param  string|null  $queue
+     * @param  array<string, mixed>  $options
+     * @return mixed
+     */
     abstract public function pushRaw($payload, $queue = null, array $options = []);
 
     abstract public function size($queue = null);
@@ -85,6 +91,10 @@ abstract class Queue implements QueueContract
         return $this->later($delay, $job, $data, $queue);
     }
 
+    /**
+     * @param  mixed  $jobs
+     * @return void
+     */
     public function bulk($jobs, $data = '', $queue = null)
     {
         foreach ((array) $jobs as $job) {
@@ -187,7 +197,9 @@ abstract class Queue implements QueueContract
     }
 
     /**
+     * @param  string|null  $queue
      * @param  string|object  $job
+     * @param  string  $payload
      * @param  DateTimeInterface|DateInterval|int|null  $delay
      */
     protected function raiseJobQueueingEvent($queue, $job, $payload, $delay): void
@@ -204,8 +216,10 @@ abstract class Queue implements QueueContract
     }
 
     /**
-     * @param  string|object  $job
+     * @param  string|null  $queue
      * @param  string|int|null  $jobId
+     * @param  string|object  $job
+     * @param  string  $payload
      * @param  DateTimeInterface|DateInterval|int|null  $delay
      */
     protected function raiseJobQueuedEvent($queue, $jobId, $job, $payload, $delay): void
@@ -250,6 +264,9 @@ abstract class Queue implements QueueContract
         return Delay::from($delay)->availableAt;
     }
 
+    /**
+     * @param  string|null  $queue
+     */
     public function getQueue($queue): string
     {
         return (string) QueueName::parse($queue, $this->default);
