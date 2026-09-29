@@ -6,6 +6,7 @@ namespace Arifnd\LiteQueue\Console\Commands;
 
 use Arifnd\LiteQueue\Console\ExceptionHandler;
 use Arifnd\LiteQueue\Queue\WorkerOptions;
+use Arifnd\LiteQueue\Support\Config;
 use Arifnd\LiteQueue\Worker\Worker;
 use Illuminate\Console\Command;
 
@@ -37,8 +38,7 @@ class WorkCommand extends Command
         }
 
         $connectionName = $this->argument('connection')
-            ?: $this->laravel['config']['default']
-            ?? 'sync';
+            ?: Config::get($this->laravel, 'default', 'sync');
 
         $options = new WorkerOptions(
             name: (string) $this->option('name'),

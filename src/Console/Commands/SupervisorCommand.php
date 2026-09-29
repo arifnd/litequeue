@@ -12,6 +12,7 @@ use Arifnd\LiteQueue\Supervisor\RedisSupervisorStore;
 use Arifnd\LiteQueue\Supervisor\Supervisor;
 use Arifnd\LiteQueue\Supervisor\SupervisorName;
 use Arifnd\LiteQueue\Supervisor\SupervisorOptions;
+use Arifnd\LiteQueue\Support\Config;
 use Arifnd\LiteQueue\Worker\Worker;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Redis\Factory as RedisFactory;
@@ -41,7 +42,7 @@ class SupervisorCommand extends Command
             $this->laravel->make(ExceptionHandler::class)->setOutput($this->output);
         }
 
-        $config = $this->laravel['config']['supervisor'] ?? [];
+        $config = (array) Config::get($this->laravel, 'supervisor', []);
 
         $options = SupervisorOptions::fromConfig($this->mergeOptions($config));
 

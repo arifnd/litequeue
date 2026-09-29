@@ -6,9 +6,9 @@ namespace Arifnd\LiteQueue\Console;
 
 use Arifnd\LiteQueue\Console\Bootstrap\RegisterCore;
 use Arifnd\LiteQueue\Console\Bootstrap\RegisterDatabase;
-use Arifnd\LiteQueue\Console\Bootstrap\RegisterQueue;
 use Arifnd\LiteQueue\Console\Bootstrap\RegisterRedis;
 use Arifnd\LiteQueue\Queue\PayloadFactory;
+use Arifnd\LiteQueue\Support\QueueRegistrar;
 use Illuminate\Config\Repository;
 use Illuminate\Container\Container;
 use Illuminate\Contracts\Events\Dispatcher as EventsDispatcher;
@@ -42,12 +42,18 @@ class Kernel
         $loader = new ConfigLoader($basePath);
         $config = $loader->litequeue();
 
+        // The standalone runner has no migrated failed_jobs table unless the user
+        // provides one, so only use the database driver when explicitly configured.
+        if (getenv('QUEUE_FAILED_DRIVER') === false && isset($config['failed'])) {
+            $config['failed']['driver'] = 'null';
+        }
+
         $container->instance('config', new Repository($config + ['database' => $loader->database()]));
         $container->instance('litequeue.base_path', $basePath);
 
         RegisterCore::register($container);
         RegisterDatabase::register($container);
-        RegisterQueue::register($container, $config);
+        QueueRegistrar::register($container, $config);
         RegisterRedis::register($container, $config);
 
         return $container;
