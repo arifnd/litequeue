@@ -133,6 +133,13 @@ Horizon-compatible supervisor state to the shared Redis. See [docs/supervisor.md
 - [Release/versioning plan](docs/versioning.md)
 - [ADR 0001 — Horizon compatibility](docs/adr/0001-horizon-compatibility.md)
 
+## Security
+
+Queue payloads are serialized PHP objects and Redis is a trusted boundary — see
+[SECURITY.md](SECURITY.md) for the trust model, hardening recommendations and how to report a
+vulnerability privately. Dependencies are audited in CI (`composer audit`) and updated via
+Dependabot.
+
 ## License
 
 MIT. See [LICENSE](LICENSE).

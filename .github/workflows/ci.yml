@@ -52,6 +52,9 @@ jobs:
           composer require "orchestra/testbench:${{ matrix.testbench }}" --dev --no-interaction --no-update
           composer update --prefer-dist --no-interaction --no-progress
 
+      - name: Audit dependencies
+        run: composer audit --no-interaction
+
       - name: Run checks
         env:
           REDIS_HOST: 127.0.0.1
