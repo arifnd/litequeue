@@ -37,3 +37,6 @@ Commands are **not** registered with Artisan by design — use the `lq` binary.
 - PHP `^8.2`
 - `ext-redis` (phpredis) **or** `predis/predis` for the Redis driver
 - `ext-pcntl` (optional) for signal handling in the worker/supervisor
+
+See [Configuration](configuration.md#connecting-to-redis) for how to point LiteQueue at a Redis
+server (environment variables, the `redis` config block, and Laravel's `database.redis`).

@@ -22,7 +22,8 @@ shuts down cleanly on deploy.
   loaded if a Laravel app bootstraps it).
 
 Useful environment variables: `QUEUE_CONNECTION`, `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`,
-`REDIS_QUEUE`, `REDIS_QUEUE_RETRY_AFTER`, `HORIZON_PREFIX`, `LITEQUEUE_SUPERVISOR_NAME`.
+`REDIS_DB`, `REDIS_PREFIX`, `REDIS_QUEUE`, `REDIS_QUEUE_RETRY_AFTER`, `APP_NAME`, `HORIZON_PREFIX`,
+`LITEQUEUE_SUPERVISOR_NAME`. See [Configuration](configuration.md#connecting-to-redis) for details.
 
 ## Graceful shutdown
 
