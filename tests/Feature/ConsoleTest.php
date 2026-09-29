@@ -10,10 +10,13 @@ use Arifnd\LiteQueue\Console\Commands\MakeServiceCommand;
 use Arifnd\LiteQueue\Console\Commands\MakeTraitCommand;
 use Arifnd\LiteQueue\Console\ExceptionHandler;
 use Arifnd\LiteQueue\Console\LiteQueueConsole;
+use Arifnd\LiteQueue\Queue\PayloadFactory;
 use Arifnd\LiteQueue\Queue\QueueManager;
 use Arifnd\LiteQueue\Queue\SyncQueue;
+use Arifnd\LiteQueue\Tests\Fixtures\TestJob;
 use Arifnd\LiteQueue\Tests\TestCase;
 use Illuminate\Console\Command;
+use Illuminate\Container\Container;
 use Illuminate\Contracts\Debug\ExceptionHandler as ExceptionHandlerContract;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Database\Eloquent\Model;
@@ -40,7 +43,10 @@ final class ConsoleTest extends TestCase
 
     protected function tearDown(): void
     {
-        Facade::clearResolvedInstances();
+        LiteQueueConsole::reset();
+
+        // Testbench rebuilds its application between tests and expects the facade
+        // root to be the current test application.
         Facade::setFacadeApplication($this->app);
 
         $this->files->deleteDirectory($this->basePath);
@@ -158,6 +164,31 @@ final class ConsoleTest extends TestCase
         $result = $method->invoke(null, $redis, []);
 
         $this->assertSame('10.0.0.9', $result['horizon']['host']);
+    }
+
+    public function test_bootstrap_is_reentrant_and_reset_restores_global_state(): void
+    {
+        $first = LiteQueueConsole::bootstrap($this->basePath);
+        $second = LiteQueueConsole::bootstrap($this->basePath);
+
+        $this->assertNotSame($first, $second);
+        $this->assertSame($second, Container::getInstance());
+
+        LiteQueueConsole::reset();
+
+        $this->assertSame($this->app, Container::getInstance());
+    }
+
+    public function test_reset_clears_the_payload_creation_callback(): void
+    {
+        PayloadFactory::createPayloadUsing(fn (string $queue, array $payload): array => array_merge($payload, ['injected' => true]));
+
+        $factory = new PayloadFactory($this->app);
+        $this->assertArrayHasKey('injected', $factory->makeArray(new TestJob, 'default'));
+
+        LiteQueueConsole::reset();
+
+        $this->assertArrayNotHasKey('injected', $factory->makeArray(new TestJob, 'default'));
     }
 
     public function test_bootstrap_binds_a_console_exception_handler(): void

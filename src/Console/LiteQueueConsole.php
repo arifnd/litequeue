@@ -22,6 +22,7 @@ use Illuminate\Contracts\Bus\Dispatcher as DispatcherContract;
 use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Contracts\Debug\ExceptionHandler as ExceptionHandlerContract;
 use Illuminate\Contracts\Events\Dispatcher as EventsDispatcher;
+use Illuminate\Contracts\Foundation\Application as ApplicationContract;
 use Illuminate\Contracts\Queue\Factory as QueueFactory;
 use Illuminate\Contracts\Redis\Factory as RedisFactory;
 use Illuminate\Database\ConnectionResolverInterface;
@@ -35,6 +36,16 @@ use Symfony\Component\Console\Application;
 
 class LiteQueueConsole
 {
+    protected static ?Container $previousContainer = null;
+
+    protected static ?ApplicationContract $previousFacadeApp = null;
+
+    protected static ?ConnectionResolverInterface $previousModelResolver = null;
+
+    protected static ?EventsDispatcher $previousModelDispatcher = null;
+
+    protected static bool $bootstrapped = false;
+
     /**
      * @param  array<int, string>|null  $argv
      */
@@ -80,6 +91,8 @@ class LiteQueueConsole
     public static function bootstrap(?string $basePath = null): Container
     {
         $basePath ??= getcwd() ?: '.';
+
+        static::captureGlobalState();
 
         $container = new ConsoleContainer;
         Container::setInstance($container);
@@ -161,6 +174,50 @@ class LiteQueueConsole
         }
 
         return $container;
+    }
+
+    /**
+     * Snapshot the global state that bootstrap mutates so it can be restored.
+     */
+    protected static function captureGlobalState(): void
+    {
+        if (static::$bootstrapped) {
+            return;
+        }
+
+        static::$previousContainer = Container::getInstance();
+        static::$previousFacadeApp = Facade::getFacadeApplication();
+        static::$previousModelResolver = Model::getConnectionResolver();
+        static::$previousModelDispatcher = Model::getEventDispatcher();
+        static::$bootstrapped = true;
+    }
+
+    /**
+     * Restore the global state replaced by bootstrap (container, facades, Eloquent).
+     */
+    public static function reset(): void
+    {
+        Facade::clearResolvedInstances();
+        Facade::setFacadeApplication(static::$previousFacadeApp);
+
+        if (static::$previousContainer !== null) {
+            Container::setInstance(static::$previousContainer);
+        }
+
+        if (static::$previousModelResolver !== null) {
+            Model::setConnectionResolver(static::$previousModelResolver);
+        } else {
+            Model::unsetConnectionResolver();
+        }
+
+        if (static::$previousModelDispatcher !== null) {
+            Model::setEventDispatcher(static::$previousModelDispatcher);
+        } else {
+            Model::unsetEventDispatcher();
+        }
+
+        PayloadFactory::createPayloadUsing(null);
+        static::$bootstrapped = false;
     }
 
     /**
