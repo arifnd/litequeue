@@ -16,14 +16,20 @@ use Arifnd\LiteQueue\Queue\QueueManager;
 use Arifnd\LiteQueue\Worker\Worker;
 use Illuminate\Cache\ArrayStore;
 use Illuminate\Cache\Repository as CacheRepository;
+use Illuminate\Config\Repository;
 use Illuminate\Container\Container;
 use Illuminate\Contracts\Bus\Dispatcher as DispatcherContract;
 use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Contracts\Events\Dispatcher as EventsDispatcher;
 use Illuminate\Contracts\Queue\Factory as QueueFactory;
 use Illuminate\Contracts\Redis\Factory as RedisFactory;
+use Illuminate\Database\ConnectionResolverInterface;
+use Illuminate\Database\Connectors\ConnectionFactory;
+use Illuminate\Database\DatabaseManager;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Events\Dispatcher as Events;
 use Illuminate\Redis\RedisManager;
+use Illuminate\Support\Facades\Facade;
 use Symfony\Component\Console\Application;
 
 class LiteQueueConsole
@@ -76,16 +82,20 @@ class LiteQueueConsole
 
         $container = new ConsoleContainer;
         Container::setInstance($container);
+        Facade::setFacadeApplication($container);
 
         $config = static::loadConfig($basePath);
+        $database = static::loadDatabaseConfig($basePath);
 
-        $container->instance('config', $config);
+        $container->instance('config', new Repository($config + ['database' => $database]));
         $container->instance('litequeue.base_path', $basePath);
 
         $container->singleton(EventsDispatcher::class, fn () => new Events);
         $container->alias(EventsDispatcher::class, 'events');
 
         $container->singleton(Cache::class, fn () => new CacheRepository(new ArrayStore));
+
+        static::registerDatabase($container);
 
         $container->singleton(QueueManager::class, function ($c) use ($config) {
             $manager = new QueueManager($c, $config);
@@ -170,6 +180,71 @@ class LiteQueueConsole
         }
 
         return [];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected static function loadDatabaseConfig(string $basePath): array
+    {
+        $candidates = [
+            $basePath.'/config/database.php',
+            $basePath.'/database.php',
+            dirname(__DIR__, 2).'/config/database.php',
+        ];
+
+        foreach ($candidates as $file) {
+            if (is_file($file)) {
+                $config = require $file;
+
+                if (is_array($config)) {
+                    return static::resolveSqlitePaths($config, $basePath);
+                }
+            }
+        }
+
+        return [];
+    }
+
+    /**
+     * Resolve relative SQLite paths against the application base path.
+     *
+     * @param  array<string, mixed>  $config
+     * @return array<string, mixed>
+     */
+    protected static function resolveSqlitePaths(array $config, string $basePath): array
+    {
+        foreach ($config['connections'] ?? [] as $name => $connection) {
+            $database = $connection['database'] ?? null;
+
+            if (($connection['driver'] ?? null) !== 'sqlite'
+                || ! is_string($database)
+                || $database === ''
+                || $database === ':memory:'
+                || str_starts_with($database, 'file:')
+                || str_starts_with($database, '/')) {
+                continue;
+            }
+
+            $config['connections'][$name]['database'] = rtrim($basePath, '/').'/'.ltrim($database, '/');
+        }
+
+        return $config;
+    }
+
+    /**
+     * Boot a database manager and Eloquent so jobs can use models standalone.
+     */
+    protected static function registerDatabase(Container $container): void
+    {
+        $container->singleton('db.factory', fn ($c) => new ConnectionFactory($c));
+
+        $container->singleton('db', fn ($c) => new DatabaseManager($c, $c->make('db.factory')));
+        $container->alias('db', DatabaseManager::class);
+        $container->alias('db', ConnectionResolverInterface::class);
+
+        Model::setConnectionResolver($container->make('db'));
+        Model::setEventDispatcher($container->make(EventsDispatcher::class));
     }
 
     /**

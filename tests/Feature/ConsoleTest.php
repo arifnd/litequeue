@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Arifnd\LiteQueue\Tests\Feature;
 
+use Arifnd\LiteQueue\Console\Commands\InstallCommand;
 use Arifnd\LiteQueue\Console\Commands\MakeJobCommand;
 use Arifnd\LiteQueue\Console\Commands\MakeServiceCommand;
 use Arifnd\LiteQueue\Console\Commands\MakeTraitCommand;
@@ -12,7 +13,11 @@ use Arifnd\LiteQueue\Queue\QueueManager;
 use Arifnd\LiteQueue\Queue\SyncQueue;
 use Arifnd\LiteQueue\Tests\TestCase;
 use Illuminate\Console\Command;
+use Illuminate\Database\DatabaseManager;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Filesystem\Filesystem;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Facade;
 use Symfony\Component\Console\Application as SymfonyApplication;
 use Symfony\Component\Console\Tester\CommandTester;
 
@@ -33,6 +38,9 @@ final class ConsoleTest extends TestCase
 
     protected function tearDown(): void
     {
+        Facade::clearResolvedInstances();
+        Facade::setFacadeApplication($this->app);
+
         $this->files->deleteDirectory($this->basePath);
 
         parent::tearDown();
@@ -148,6 +156,116 @@ final class ConsoleTest extends TestCase
         $result = $method->invoke(null, $redis, []);
 
         $this->assertSame('10.0.0.9', $result['horizon']['host']);
+    }
+
+    public function test_bootstrap_boots_eloquent_and_supports_model_crud(): void
+    {
+        $this->files->ensureDirectoryExists($this->basePath.'/config');
+        $this->files->put($this->basePath.'/config/database.php', <<<'PHP'
+        <?php
+
+        return [
+            'default' => 'testing',
+            'connections' => [
+                'testing' => ['driver' => 'sqlite', 'database' => ':memory:', 'prefix' => ''],
+            ],
+        ];
+        PHP);
+
+        $container = LiteQueueConsole::bootstrap($this->basePath);
+
+        $this->assertInstanceOf(DatabaseManager::class, $container->make('db'));
+
+        $container->make('db')->connection()->getSchemaBuilder()->create('widgets', function ($table): void {
+            $table->id();
+            $table->string('name');
+            $table->timestamps();
+        });
+
+        $model = new class extends Model
+        {
+            protected $table = 'widgets';
+
+            protected $guarded = [];
+        };
+
+        $model->newQuery()->create(['name' => 'alpha']);
+
+        $this->assertSame('alpha', $model->newQuery()->first()->name);
+    }
+
+    public function test_db_facade_and_query_builder_work_standalone(): void
+    {
+        $this->files->ensureDirectoryExists($this->basePath.'/config');
+        $this->files->put($this->basePath.'/config/database.php', <<<'PHP'
+        <?php
+
+        return [
+            'default' => 'testing',
+            'connections' => [
+                'testing' => ['driver' => 'sqlite', 'database' => ':memory:', 'prefix' => ''],
+            ],
+        ];
+        PHP);
+
+        LiteQueueConsole::bootstrap($this->basePath);
+
+        DB::connection()->getSchemaBuilder()->create('widgets', function ($table): void {
+            $table->id();
+            $table->string('name');
+        });
+
+        DB::table('widgets')->insert(['name' => 'alpha']);
+
+        $this->assertSame('alpha', DB::table('widgets')->value('name'));
+    }
+
+    public function test_bootstrap_resolves_relative_sqlite_paths_against_the_base_path(): void
+    {
+        $this->files->ensureDirectoryExists($this->basePath.'/config');
+        $this->files->put($this->basePath.'/config/database.php', <<<'PHP'
+        <?php
+
+        return [
+            'default' => 'testing',
+            'connections' => [
+                'testing' => ['driver' => 'sqlite', 'database' => 'database/app.sqlite', 'prefix' => ''],
+            ],
+        ];
+        PHP);
+
+        $container = LiteQueueConsole::bootstrap($this->basePath);
+
+        $this->assertSame(
+            $this->basePath.'/database/app.sqlite',
+            $container['config']['database.connections.testing.database']
+        );
+    }
+
+    public function test_install_publishes_the_litequeue_and_database_configs(): void
+    {
+        $this->runCommand(InstallCommand::class, []);
+
+        $this->assertFileExists($this->basePath.'/config/litequeue.php');
+        $this->assertFileExists($this->basePath.'/config/database.php');
+    }
+
+    public function test_install_can_skip_the_database_config(): void
+    {
+        $this->runCommand(InstallCommand::class, ['--no-database' => true]);
+
+        $this->assertFileExists($this->basePath.'/config/litequeue.php');
+        $this->assertFileDoesNotExist($this->basePath.'/config/database.php');
+    }
+
+    public function test_install_does_not_overwrite_an_existing_database_config(): void
+    {
+        $this->files->ensureDirectoryExists($this->basePath.'/config');
+        $this->files->put($this->basePath.'/config/database.php', '<?php return ["custom" => true];');
+
+        $this->runCommand(InstallCommand::class, []);
+
+        $this->assertStringContainsString('custom', $this->files->get($this->basePath.'/config/database.php'));
     }
 
     /**
